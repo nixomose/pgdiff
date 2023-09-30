@@ -10,23 +10,31 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/joncrlsn/misc"
-	"github.com/joncrlsn/pgutil"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/joncrlsn/misc"
+	"github.com/joncrlsn/pgutil"
 )
 
 var (
 	columnSqlTemplate = initColumnSqlTemplate()
 )
 
+// original
+// {{if eq $.DbSchema "*" }}table_schema || '.' || {{end}}table_name || '.' || column_name AS compare_name
+
+// the fix
+// {{if eq $.DbSchema "*" }}table_schema || '.' || {{end}}table_name || '.' ||lpad(cast (ordinal_position as varchar), 5, '0')|| column_name AS compare_name
+
 // Initializes the Sql template
 func initColumnSqlTemplate() *template.Template {
+
 	sql := `
 SELECT table_schema
-    ,  {{if eq $.DbSchema "*" }}table_schema || '.' || {{end}}table_name || '.' ||lpad(cast (ordinal_position as varchar), 5, '0')|| column_name AS compare_name
+    ,  {{if eq $.DbSchema "*" }}table_schema || '.' || {{end}}table_name || '.' || column_name AS compare_name
 	, table_name
     , column_name
     , data_type
@@ -172,10 +180,10 @@ func (c *ColumnSchema) Add() {
 	} else {
 		dataType := c.get("data_type")
 		//if c.get("data_type") == "ARRAY" {
-			//fmt.Println("-- Note that adding of array data types are not yet generated properly.")
+		//fmt.Println("-- Note that adding of array data types are not yet generated properly.")
 		//}
 		if dataType == "ARRAY" {
-			dataType = c.get("array_type")+"[]"
+			dataType = c.get("array_type") + "[]"
 		}
 		//fmt.Printf("ALTER TABLE %s.%s ADD COLUMN %s %s", schema, c.get("table_name"), c.get("column_name"), c.get("data_type"))
 		fmt.Printf("ALTER TABLE %s.%s ADD COLUMN %s %s", schema, c.get("table_name"), c.get("column_name"), dataType)
@@ -187,7 +195,7 @@ func (c *ColumnSchema) Add() {
 	if c.get("column_default") != "null" {
 		fmt.Printf(" DEFAULT %s", c.get("column_default"))
 	}
-	// NOTE: there are more identity column sequence options according to the PostgreSQL 
+	// NOTE: there are more identity column sequence options according to the PostgreSQL
 	// CREATE TABLE docs, but these do not appear to be available as of version 10.1
 	if c.get("is_identity") == "YES" {
 		fmt.Printf(" GENERATED %s AS IDENTITY", c.get("identity_generation"))
@@ -211,11 +219,11 @@ func (c *ColumnSchema) Change(obj interface{}) {
 	// Adjust data type for array columns
 	dataType1 := c.get("data_type")
 	if dataType1 == "ARRAY" {
-		dataType1 = c.get("array_type")+"[]"
+		dataType1 = c.get("array_type") + "[]"
 	}
 	dataType2 := c2.get("data_type")
 	if dataType2 == "ARRAY" {
-		dataType2 = c2.get("array_type")+"[]"
+		dataType2 = c2.get("array_type") + "[]"
 	}
 
 	// Detect column type change (mostly varchar length, or number size increase)
@@ -342,14 +350,14 @@ func compare(conn1 *sql.DB, conn2 *sql.DB, tpl *template.Template) {
 // compareColumns outputs SQL to make the columns match between two databases or schemas
 func compareColumns(conn1 *sql.DB, conn2 *sql.DB) {
 
-    compare(conn1, conn2, columnSqlTemplate)
+	compare(conn1, conn2, columnSqlTemplate)
 
 }
 
 // compareColumns outputs SQL to make the tables columns (without views columns) match between two databases or schemas
 func compareTableColumns(conn1 *sql.DB, conn2 *sql.DB) {
 
-    compare(conn1, conn2, tableColumnSqlTemplate)
+	compare(conn1, conn2, tableColumnSqlTemplate)
 
 }
 
@@ -362,4 +370,3 @@ func getMaxLength(maxLength string) (string, bool) {
 	}
 	return maxLength, true
 }
-

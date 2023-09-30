@@ -87,14 +87,15 @@ func main() {
 	fmt.Println("-- schemaType:", schemaType)
 
 	fmt.Println("-- db1:", dbInfo1)
-	fmt.Println("-- db2:", dbInfo2)
-	fmt.Println("-- Run the following SQL against db2:")
 
 	conn1, err := dbInfo1.Open()
 	check("opening database 1", err)
 
+	fmt.Println("-- db2:", dbInfo2)
+
 	conn2, err := dbInfo2.Open()
 	check("opening database 2", err)
+	fmt.Println("-- Run the following SQL against db2:")
 
 	// This section needs to be improved so that you do not need to choose the type
 	// of alter statements to generate.  Rather, all should be generated in the
